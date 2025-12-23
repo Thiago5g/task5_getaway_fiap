@@ -4,18 +4,25 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IncomingPaymentWebhookDto } from '../dto/incoming-payment-webhook.dto';
 import { PaymentWebhookEvent } from '../entity/payment-webhook-event.entity';
+import { Veiculo, VeiculoStatus } from '../../veiculos/entity/veiculo.entity';
 
 @Injectable()
 export class PaymentsWebhookService {
   private readonly logger = new Logger(PaymentsWebhookService.name);
-  private salesServiceUrl =
-    process.env.SALES_SERVICE_URL || 'http://localhost:3001';
+  private salesServiceUrl = process.env.SALES_MS_URL || 'http://localhost:3001';
 
   constructor(
     @InjectRepository(PaymentWebhookEvent)
     private readonly repo: Repository<PaymentWebhookEvent>,
+    @InjectRepository(Veiculo)
+    private readonly veiculoRepo: Repository<Veiculo>,
     private readonly http: HttpService,
   ) {}
+
+  private getInternalHeaders() {
+    const token = process.env.SALES_INTERNAL_TOKEN;
+    return token ? { 'x-internal-token': token } : {};
+  }
 
   async handle(dto: IncomingPaymentWebhookDto) {
     const existing = await this.repo.findOne({
@@ -29,31 +36,53 @@ export class PaymentsWebhookService {
     await this.repo.save({ eventoId: dto.eventId, dados: dto });
 
     try {
-      const forwardPayload: any = { ...dto };
-      // Mapear status PT -> EN se microserviço ainda espera inglês (ajuste se necessário)
-      const statusMap: Record<string, string> = {
-        PAGO: 'PAID',
-        CANCELADO: 'CANCELED',
-        FALHOU: 'FAILED',
-        PENDENTE: 'PENDING',
+      // 1) Atualiza o pagamento no Sales MS pelo paymentCode (evita precisar do veiculoId no webhook)
+      const salesPayload: any = {
+        statusPagamento: dto.status,
       };
-      forwardPayload.status = statusMap[dto.status] || dto.status;
-
-      // Incluir preco apenas quando pago e informado
       if (dto.status === 'PAGO' && typeof dto.preco === 'number') {
-        forwardPayload.preco = dto.preco;
+        salesPayload.preco = dto.preco;
       }
-      // Se cancelado, remover preco se existir (não necessário para cancelamento)
-      if (dto.status === 'CANCELADO') {
-        delete forwardPayload.preco;
-      }
-      await this.http
-        .put(`${this.salesServiceUrl}/internal/payments/sync`, forwardPayload, {
-          timeout: 5000,
-        })
+
+      const salesResp = await this.http
+        .patch(
+          `${this.salesServiceUrl}/vendas/pagamento/${encodeURIComponent(dto.paymentCode)}`,
+          salesPayload,
+          {
+            timeout: 5000,
+            headers: this.getInternalHeaders(),
+          },
+        )
         .toPromise();
+
+      // O Sales MS retorna normalmente { message, venda }
+      const vendaAtualizada = salesResp?.data?.venda ?? salesResp?.data;
+      const veiculoId = vendaAtualizada?.veiculoId;
+
+      // 2) Compensações no Gateway (fonte da verdade do status do veículo)
+      if (typeof veiculoId === 'number') {
+        const veiculo = await this.veiculoRepo.findOne({ where: { id: veiculoId } });
+        if (veiculo) {
+          if (dto.status === 'PAGO') {
+            veiculo.status = VeiculoStatus.AGUARDANDO_RETIRADA;
+            await this.veiculoRepo.save(veiculo);
+          }
+          if (dto.status === 'CANCELADO' || dto.status === 'FALHOU') {
+            veiculo.status = VeiculoStatus.DISPONIVEL;
+            (veiculo as any).reservedByClienteId = null;
+            (veiculo as any).reservedAt = null;
+            (veiculo as any).reservationExpiresAt = null;
+            await this.veiculoRepo.save(veiculo);
+          }
+        }
+      } else {
+        this.logger.warn(
+          `Payment event ${dto.eventId}: Sales response sem veiculoId. Não foi possível ajustar status do veículo no Gateway.`,
+        );
+      }
+
       this.logger.log(
-        `Forwarded payment event ${dto.eventId} status=${dto.status} (mapped=${forwardPayload.status}) -> sales service`,
+        `Processed payment event ${dto.eventId} status=${dto.status} paymentCode=${dto.paymentCode} -> Sales + compensações no Gateway`,
       );
     } catch (err: any) {
       this.logger.error(

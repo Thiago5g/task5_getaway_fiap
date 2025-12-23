@@ -15,15 +15,32 @@ export class ClienteService {
     const salvo = await this.clienteRepository.save(cliente);
     return {
       message: 'Cliente cadastrado com sucesso.',
-      cliente: salvo,
+      cliente: this.toSafeCliente(salvo),
     };
   }
 
   async findById(id: number) {
-    return await this.clienteRepository.findOneBy({ id });
+    const cliente = await this.clienteRepository.findOneBy({ id });
+    return cliente ? this.toSafeCliente(cliente) : null;
   }
 
   async findByCpf(cpf: string) {
-    return await this.clienteRepository.findOneBy({ cpf });
+    const cliente = await this.clienteRepository.findOneBy({ cpf });
+    return cliente ? this.toSafeCliente(cliente) : null;
+  }
+
+  /**
+   * Retorno seguro: evita expor CPF completo em responses e logs.
+   */
+  private toSafeCliente(cliente: Cliente) {
+    const cpf = cliente.cpf ?? '';
+    const masked = cpf.length >= 4 ? `***.***.***-${cpf.slice(-2)}` : '***';
+    return {
+      id: cliente.id,
+      nome: cliente.nome,
+      email: cliente.email,
+      cpfMasked: masked,
+      createdAt: cliente.createdAt,
+    };
   }
 }

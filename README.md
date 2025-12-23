@@ -1,6 +1,6 @@
 # Plataforma de Revenda de Veículos – Backend API
 
-![CI](https://github.com/Thiago5g/task4_getaway_fiap/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/Thiago5g/task5_getaway_fiap/actions/workflows/ci.yml/badge.svg)
 ![Coverage](https://img.shields.io/badge/coverage-80%2B-green?style=flat)
 ![Sonar Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=REPLACE_ME_PROJECT_KEY&metric=alert_status)
 ![Sonar Maintainability](https://sonarcloud.io/api/project_badges/measure?project=REPLACE_ME_PROJECT_KEY&metric=sqale_rating)

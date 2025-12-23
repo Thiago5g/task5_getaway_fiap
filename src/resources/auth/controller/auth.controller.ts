@@ -12,7 +12,6 @@ export class AuthController {
   @Post('login')
   @ApiBody({ type: LoginDto })
   async login(@Body() body: LoginDto) {
-    console.log(body, 'body');
     return this.authService.login(body.email, body.password);
   }
 }

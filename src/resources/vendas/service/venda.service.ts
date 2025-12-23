@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { LessThan, Repository } from 'typeorm';
 import { Cliente } from '../../clientes/entity/cliente.entity';
 import { VeiculoStatus, Veiculo } from '../../veiculos/entity/veiculo.entity';
 import { VendaMicroserviceClient } from './venda-microservice.client';
@@ -22,7 +22,10 @@ export class VendaService {
     if (!cliente) throw new NotFoundException('Cliente não encontrado');
     const veiculo = await this.veiculoRepo.findOne({ where: { placa } });
     if (!veiculo) throw new NotFoundException('Veículo não encontrado');
-    if (veiculo.status === VeiculoStatus.VENDIDO)
+    if (
+      veiculo.status !== VeiculoStatus.RESERVADO &&
+      veiculo.status !== VeiculoStatus.DISPONIVEL
+    )
       throw new BadRequestException('Veículo já foi vendido');
 
     const external = await this.externalClient.registrarVenda({
@@ -33,7 +36,7 @@ export class VendaService {
 
     // Atualiza status somente se microserviço confirmar sucesso
     if (external && (external as any).success !== false) {
-      veiculo.status = VeiculoStatus.VENDIDO;
+      veiculo.status = VeiculoStatus.AGUARDANDO_PAGAMENTO;
       await this.veiculoRepo.save(veiculo);
     }
 
@@ -81,5 +84,143 @@ export class VendaService {
       ? await this.clienteRepo.findOne({ where: { id: venda.clienteId } })
       : null;
     return { ...venda, veiculo, cliente };
+  }
+
+  async realizarReserva(placa: string): Promise<any> {
+    // Compatível com chamada existente; se quiser associar cliente à reserva,
+    // use o novo método realizarReservaComCpf(...)
+    const veiculo = await this.veiculoRepo.findOne({ where: { placa } });
+    if (!veiculo) throw new NotFoundException('Veículo não encontrado');
+    if (veiculo.status === VeiculoStatus.RESERVADO)
+      throw new BadRequestException('Veículo já foi reservado');
+    if (veiculo.status !== VeiculoStatus.DISPONIVEL)
+      throw new BadRequestException(
+        'Veículo já foi vendido ou não está disponível',
+      );
+
+    veiculo.status = VeiculoStatus.RESERVADO;
+    veiculo.reservedAt = new Date();
+    veiculo.reservationExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+    await this.veiculoRepo.save(veiculo);
+
+    return {
+      message: 'Reserva do veiculo efetuado com sucesso',
+
+      veiculo: {
+        id: veiculo.id,
+        placa: (veiculo as any).placa,
+        status: veiculo.status,
+      },
+    };
+  }
+
+  async realizarReservaComCpf(placa: string, cpf?: string): Promise<any> {
+    if (!cpf) {
+      return this.realizarReserva(placa);
+    }
+    const cliente = await this.clienteRepo.findOneBy({ cpf });
+    if (!cliente) throw new NotFoundException('Cliente não encontrado');
+    const veiculo = await this.veiculoRepo.findOne({ where: { placa } });
+    if (!veiculo) throw new NotFoundException('Veículo não encontrado');
+    if (veiculo.status === VeiculoStatus.RESERVADO)
+      throw new BadRequestException('Veículo já foi reservado');
+    if (veiculo.status !== VeiculoStatus.DISPONIVEL)
+      throw new BadRequestException(
+        'Veículo já foi vendido ou não está disponível',
+      );
+
+    veiculo.status = VeiculoStatus.RESERVADO;
+    veiculo.reservedByClienteId = cliente.id;
+    veiculo.reservedAt = new Date();
+    veiculo.reservationExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+    await this.veiculoRepo.save(veiculo);
+
+    return {
+      message: 'Reserva do veiculo efetuado com sucesso',
+      veiculo: {
+        id: veiculo.id,
+        placa: (veiculo as any).placa,
+        status: veiculo.status,
+      },
+      reserva: {
+        reservedByClienteId: veiculo.reservedByClienteId,
+        reservedAt: veiculo.reservedAt,
+        reservationExpiresAt: veiculo.reservationExpiresAt,
+      },
+    };
+  }
+
+  async cancelamentoReserva(placa: string): Promise<any> {
+    const veiculo = await this.veiculoRepo.findOne({ where: { placa } });
+    if (!veiculo) throw new NotFoundException('Veículo não encontrado');
+    veiculo.status = VeiculoStatus.DISPONIVEL;
+    veiculo.reservedByClienteId = null;
+    veiculo.reservedAt = null;
+    veiculo.reservationExpiresAt = null;
+    await this.veiculoRepo.save(veiculo);
+
+    return {
+      message: 'Cancelamento de reserva efetuado com sucesso',
+
+      veiculo: {
+        id: veiculo.id,
+        placa: (veiculo as any).placa,
+        status: veiculo.status,
+      },
+    };
+  }
+
+  async expiracaoReserva(): Promise<any> {
+    // Expira reservas com base em reservationExpiresAt (mais confiável do que updatedAt)
+    const cutoff = new Date();
+    const expirados = await this.veiculoRepo.find({
+      where: {
+        status: VeiculoStatus.RESERVADO,
+        reservationExpiresAt: LessThan(cutoff),
+      },
+    });
+    for (const veiculo of expirados) {
+      veiculo.status = VeiculoStatus.DISPONIVEL;
+      veiculo.reservedByClienteId = null;
+      veiculo.reservedAt = null;
+      veiculo.reservationExpiresAt = null;
+      await this.veiculoRepo.save(veiculo);
+    }
+    return {
+      message: 'Expiração de reservas processada com sucesso',
+      veiculosAtualizados: expirados.length,
+    };
+  }
+
+  async realizarRetirada(placa: string): Promise<any> {
+    const veiculo = await this.veiculoRepo.findOne({
+      where: { placa },
+    });
+    if (!veiculo) throw new NotFoundException('Veículo não encontrado');
+    if (veiculo.status === VeiculoStatus.ENTREGUE)
+      throw new BadRequestException('Veículo já foi entregue');
+
+    if (veiculo.status !== VeiculoStatus.AGUARDANDO_RETIRADA) {
+      throw new BadRequestException(
+        'Retirada não permitida: pagamento ainda não confirmado',
+      );
+    }
+
+    const external = await this.externalClient.registrarRetirada(veiculo.id);
+
+    // Atualiza status somente se microserviço confirmar sucesso
+    if (external && (external as any).success !== false) {
+      veiculo.status = VeiculoStatus.ENTREGUE;
+      await this.veiculoRepo.save(veiculo);
+    }
+
+    return {
+      message:
+        external && (external as any).success === false
+          ? 'Retirada registrada parcialmente: microserviço não confirmou sucesso.'
+          : 'Retirada efetuada com sucesso via microserviço.',
+      statusVeiculo: VeiculoStatus.ENTREGUE,
+      external,
+    };
   }
 }

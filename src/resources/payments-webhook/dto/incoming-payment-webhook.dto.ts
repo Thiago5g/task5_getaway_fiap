@@ -21,7 +21,7 @@ export class IncomingPaymentWebhookDto {
   preco?: number; // centavos (opcional para CANCELADO)
 
   @IsIn(['BRL'])
-  currency: 'BRL';
+  moeda: 'BRL';
 
   @IsOptional()
   @IsISO8601()

@@ -41,9 +41,23 @@ export class VeiculoService {
     });
   }
 
-  async listarVendidos() {
+  async listarReservados() {
     return await this.veiculoRepo.find({
-      where: { status: VeiculoStatus.VENDIDO },
+      where: { status: VeiculoStatus.RESERVADO },
+      order: { preco: 'ASC' },
+    });
+  }
+
+  async listarEntregues() {
+    return await this.veiculoRepo.find({
+      where: { status: VeiculoStatus.ENTREGUE },
+      order: { preco: 'ASC' },
+    });
+  }
+
+  async listarAguardandoPagamento() {
+    return await this.veiculoRepo.find({
+      where: { status: VeiculoStatus.AGUARDANDO_PAGAMENTO },
       order: { preco: 'ASC' },
     });
   }

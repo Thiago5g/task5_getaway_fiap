@@ -1,4 +1,4 @@
-# 🚀 Configuração CI/CD - Task4 getaway FIAP
+# 🚀 Configuração CI/CD - task5 getaway FIAP
 
 Este documento explica como configurar a pipeline CI/CD completa para o projeto.
 
@@ -17,13 +17,13 @@ Este documento explica como configurar a pipeline CI/CD completa para o projeto.
 
 #### Passo 2: Configurar o projeto no SonarCloud
 1. Clique em "+" → "Analyze new project"
-2. Selecione o repositório `task4_getaway_fiap`
+2. Selecione o repositório `task5_getaway_fiap`
 3. Configure a organização (use: `thiago5g`)
-4. Configure o projeto key: `Thiago5g_task4_getaway_fiap`
+4. Configure o projeto key: `Thiago5g_task5_getaway_fiap`
 
 #### Passo 3: Configurar Token no GitHub
 1. No SonarCloud, vá em Account → Security → Generate Tokens
-2. Gere um token com nome `task4_getaway_fiap`
+2. Gere um token com nome `task5_getaway_fiap`
 3. Copie o token
 4. No GitHub, vá em Settings → Secrets and variables → Actions
 5. Adicione um novo secret:

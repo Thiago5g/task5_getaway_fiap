@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "Task4 FIAP API",
+    "name": "task5 FIAP API",
     "description": "Coleção para testar endpoints (auth, clientes, veiculos, vendas e webhook de pagamentos). Campos do webhook adaptados para português (preco).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -80,7 +80,7 @@
         "method": "POST",
         "header": [ {"key": "Content-Type", "value": "application/json"} ],
         "url": {"raw": "{{baseUrl}}/webhooks/payments","host":["{{baseUrl}}"],"path":["webhooks","payments"]},
-        "body": {"mode": "raw", "raw": "{\n  \"eventId\": \"evt-123\",\n  \"paymentCode\": \"pay_001\",\n  \"status\": \"PAGO\",\n  \"preco\": 36000,\n  \"currency\": \"BRL\",\n  \"paidAt\": \"2025-10-07T12:00:00.000Z\",\n  \"provider\": \"MockPay\"\n}"}
+        "body": {"mode": "raw", "raw": "{\n  \"eventId\": \"evt-123\",\n  \"paymentCode\": \"pay_001\",\n  \"status\": \"PAGO\",\n  \"preco\": 36000,\n  \"moeda\": \"BRL\",\n  \"paidAt\": \"2025-10-07T12:00:00.000Z\",\n  \"provider\": \"MockPay\"\n}"}
       },
       "response": []
     },
@@ -112,7 +112,7 @@
         "method": "POST",
         "header": [ {"key": "Content-Type", "value": "application/json"} ],
         "url": {"raw": "{{baseUrl}}/webhooks/payments","host":["{{baseUrl}}"],"path":["webhooks","payments"]},
-        "body": {"mode": "raw", "raw": "{\n  \"eventId\": \"evt-pendente-1\",\n  \"paymentCode\": \"pay_002\",\n  \"status\": \"PENDENTE\",\n  \"preco\": 36000,\n  \"currency\": \"BRL\",\n  \"provider\": \"MockPay\"\n}"}
+        "body": {"mode": "raw", "raw": "{\n  \"eventId\": \"evt-pendente-1\",\n  \"paymentCode\": \"pay_002\",\n  \"status\": \"PENDENTE\",\n  \"preco\": 36000,\n  \"moeda\": \"BRL\",\n  \"provider\": \"MockPay\"\n}"}
       },
       "response": []
     },
@@ -135,7 +135,7 @@
         "method": "POST",
         "header": [ {"key": "Content-Type", "value": "application/json"} ],
         "url": {"raw": "{{baseUrl}}/webhooks/payments","host":["{{baseUrl}}"],"path":["webhooks","payments"]},
-        "body": {"mode": "raw", "raw": "{\n  \"eventId\": \"evt-cancelado-1\",\n  \"paymentCode\": \"pay_003\",\n  \"status\": \"CANCELADO\",\n  \"currency\": \"BRL\",\n  \"provider\": \"MockPay\"\n}"}
+        "body": {"mode": "raw", "raw": "{\n  \"eventId\": \"evt-cancelado-1\",\n  \"paymentCode\": \"pay_003\",\n  \"status\": \"CANCELADO\",\n  \"moeda\": \"BRL\",\n  \"provider\": \"MockPay\"\n}"}
       },
       "response": []
     },
@@ -158,7 +158,7 @@
         "method": "POST",
         "header": [ {"key": "Content-Type", "value": "application/json"} ],
         "url": {"raw": "{{baseUrl}}/webhooks/payments","host":["{{baseUrl}}"],"path":["webhooks","payments"]},
-        "body": {"mode": "raw", "raw": "{\n  \"eventId\": \"evt-falhou-1\",\n  \"paymentCode\": \"pay_004\",\n  \"status\": \"FALHOU\",\n  \"currency\": \"BRL\",\n  \"provider\": \"MockPay\"\n}"}
+        "body": {"mode": "raw", "raw": "{\n  \"eventId\": \"evt-falhou-1\",\n  \"paymentCode\": \"pay_004\",\n  \"status\": \"FALHOU\",\n  \"moeda\": \"BRL\",\n  \"provider\": \"MockPay\"\n}"}
       },
       "response": []
     }

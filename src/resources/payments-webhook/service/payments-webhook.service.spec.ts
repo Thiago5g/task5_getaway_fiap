@@ -40,7 +40,7 @@ describe('PaymentsWebhookService', () => {
       paymentCode: 'pay_1',
       status: 'PAGO',
       preco: 12345,
-      currency: 'BRL',
+      moeda: 'BRL',
     };
 
     const res = await service.handle(dto);
@@ -61,7 +61,7 @@ describe('PaymentsWebhookService', () => {
       paymentCode: 'p',
       status: 'PAGO',
       preco: 1,
-      currency: 'BRL',
+      moeda: 'BRL',
     } as any);
     expect(res.duplicate).toBe(true);
     expect(repo.save).not.toHaveBeenCalled();
@@ -77,7 +77,7 @@ describe('PaymentsWebhookService', () => {
       paymentCode: 'p',
       status: 'PENDENTE',
       preco: 10,
-      currency: 'BRL',
+      moeda: 'BRL',
     } as any);
     expect(res.received).toBe(true);
   });
@@ -90,7 +90,7 @@ describe('PaymentsWebhookService', () => {
       eventId: 'evt-cancel-1',
       paymentCode: 'pay_c',
       status: 'CANCELADO',
-      currency: 'BRL',
+      moeda: 'BRL',
     };
     const res = await service.handle(dto);
     expect(res.received).toBe(true);

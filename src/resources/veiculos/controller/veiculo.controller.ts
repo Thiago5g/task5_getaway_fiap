@@ -42,10 +42,22 @@ export class VeiculoController {
     return this.veiculoService.listarDisponiveis();
   }
 
-  @Get('vendidos')
-  @ApiOperation({ summary: 'Listar veículos vendidos' })
-  listarVendidos() {
-    return this.veiculoService.listarVendidos();
+  @Get('reservados')
+  @ApiOperation({ summary: 'Listar veículos reservados' })
+  listarReservados() {
+    return this.veiculoService.listarReservados();
+  }
+
+  @Get('entregues')
+  @ApiOperation({ summary: 'Listar veículos entregues' })
+  listarEntregues() {
+    return this.veiculoService.listarEntregues();
+  }
+
+  @Get('aguardando-pagamento')
+  @ApiOperation({ summary: 'Listar veículos aguardando pagamento' })
+  listarAguardandoPagamento() {
+    return this.veiculoService.listarAguardandoPagamento();
   }
 
   @Get('todos')

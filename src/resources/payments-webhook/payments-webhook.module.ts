@@ -11,6 +11,7 @@ import { HttpModule } from '@nestjs/axios';
 import { PaymentsWebhookController } from './controller/payments-webhook.controller';
 import { PaymentsWebhookService } from './service/payments-webhook.service';
 import { PaymentWebhookEvent } from './entity/payment-webhook-event.entity';
+import { Veiculo } from '../veiculos/entity/veiculo.entity';
 @Injectable()
 export class SignatureMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction): void {
@@ -25,7 +26,7 @@ export class SignatureMiddleware implements NestMiddleware {
 }
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PaymentWebhookEvent]), HttpModule],
+  imports: [TypeOrmModule.forFeature([PaymentWebhookEvent, Veiculo]), HttpModule],
   controllers: [PaymentsWebhookController],
   providers: [PaymentsWebhookService],
 })

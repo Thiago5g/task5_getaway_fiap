@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AuthModule } from './resources/auth/auth.module';
@@ -22,6 +23,7 @@ import { PaymentsWebhookModule } from './resources/payments-webhook/payments-web
       autoLoadEntities: true,
       // synchronize: true,
     }),
+    ScheduleModule.forRoot(),
     AuthModule,
     ClienteModule,
     VeiculoModule,
