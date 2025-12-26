@@ -5,7 +5,9 @@ import { AppController } from './app.controller';
 import { AuthModule } from './resources/auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtStrategy } from './resources/auth/jwt-passport/jwt-strategy';
-import { JwtAuthGuard } from './resources/auth/jwt-passport/jwt-auth.guard';
+// import { JwtAuthGuard } from './resources/auth/jwt-passport/jwt-auth.guard';
+import { CognitoAuthGuard } from './common/guards/cognito-auth.guard';
+import { RolesGuard } from './common/guards/roles.guard';
 import { ConfigModule } from '@nestjs/config';
 import { ClienteModule } from './resources/clientes/cliente.module';
 import { VeiculoModule } from './resources/veiculos/veiculo.module';
@@ -35,7 +37,11 @@ import { PaymentsWebhookModule } from './resources/payments-webhook/payments-web
     JwtStrategy,
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      useClass: CognitoAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })

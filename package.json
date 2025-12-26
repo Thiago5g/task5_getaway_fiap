@@ -27,6 +27,7 @@
     "migration:show": "npx typeorm-ts-node-commonjs migration:show -d src/data-source.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.958.0",
     "@nestjs/axios": "^4.0.0",
     "@nestjs/common": "^11.0.12",
     "@nestjs/config": "^4.0.2",
@@ -42,6 +43,7 @@
     "class-validator": "^0.14.1",
     "cloudinary": "^2.6.0",
     "dayjs": "^1.11.13",
+    "jose": "^5.2.4",
     "openai": "^4.90.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",

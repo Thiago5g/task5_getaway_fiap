@@ -12,6 +12,9 @@ import { VeiculoService } from '../service/veiculo.service';
 import { CreateVeiculoDto } from '../dto/create-veiculo.dto';
 import { UpdateVeiculoDto } from '../dto/update-veiculo.dto';
 import { ApiTags, ApiOperation, ApiBody, ApiParam } from '@nestjs/swagger';
+import { UseGuards } from '@nestjs/common';
+import { Roles } from '../../../common/decorators/roles.decorator';
+import { RolesGuard } from '../../../common/guards/roles.guard';
 
 @ApiTags('Veículos')
 @Controller('veiculos')
@@ -21,6 +24,8 @@ export class VeiculoController {
   @Post()
   @ApiOperation({ summary: 'Criar um novo veículo' })
   @ApiBody({ type: CreateVeiculoDto })
+  @UseGuards(RolesGuard)
+  @Roles('Admins')
   criar(@Body() body: CreateVeiculoDto) {
     return this.veiculoService.criarVeiculo(body);
   }
@@ -29,6 +34,8 @@ export class VeiculoController {
   @ApiOperation({ summary: 'Editar um veículo existente' })
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: UpdateVeiculoDto })
+  @UseGuards(RolesGuard)
+  @Roles('Admins')
   editar(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: UpdateVeiculoDto,

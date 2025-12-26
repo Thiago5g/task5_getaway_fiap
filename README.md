@@ -234,3 +234,76 @@ Checklist rápido:
 3. Usuário do banco sem permissões de DROP em produção (se possível).
 4. Revisar histórico para remoção de segredos expostos (BFG ou git filter-repo se necessário).
 5. Habilitar branch protection em `main` exigindo status da pipeline.
+
+---
+
+## 🔐 Autenticação com Amazon Cognito (Pronto para Produção)
+
+Esta API valida JWTs emitidos pelo Amazon Cognito (User Pool) usando JWKS (RS256) com a biblioteca `jose`. Não há fluxo de login local nem assinatura manual de tokens – apenas validação de tokens recebidos via header `Authorization: Bearer <token>`.
+
+### Dependências
+
+- `jose`
+
+### Variáveis de Ambiente (Cognito)
+
+- `COGNITO_REGION`
+- `COGNITO_USER_POOL_ID`
+- `COGNITO_CLIENT_ID`
+
+Issuer esperado: `https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}`
+
+### Implementação
+
+- Guard: `src/common/guards/cognito-auth.guard.ts`
+  - Valida assinatura via JWKS (`/.well-known/jwks.json`), issuer, audience e expiração.
+  - Anexa o payload do token em `req.user`.
+- RBAC opcional por grupos:
+  - Decorator `@Roles(...roles)` em `src/common/decorators/roles.decorator.ts`.
+  - Guard `src/common/guards/roles.guard.ts` valida claim `cognito:groups`.
+
+### Registro dos Guards
+
+Em `src/app.module.ts` os guards são registrados globalmente:
+
+```ts
+providers: [
+  {
+    provide: APP_GUARD,
+    useClass: CognitoAuthGuard,
+  },
+  {
+    provide: APP_GUARD,
+    useClass: RolesGuard,
+  },
+]
+```
+
+### Exemplo de Uso em Controllers
+
+Proteção de criação/edição de veículos (exige grupo `Admins`):
+
+```ts
+@UseGuards(RolesGuard)
+@Roles('Admins')
+@Post()
+criar(@Body() body: CreateVeiculoDto) { /* ... */ }
+
+@UseGuards(RolesGuard)
+@Roles('Admins')
+@Put(':id')
+editar(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateVeiculoDto) { /* ... */ }
+```
+
+Proteção de vendas (exige `Operators` ou `Admins`):
+
+```ts
+@UseGuards(RolesGuard)
+@Roles('Operators', 'Admins')
+@Post('efetuar-venda')
+vender(@Body() dto: CreateVendaDto) { /* ... */ }
+```
+
+### Por que Cognito melhora a segurança?
+
+Usar Amazon Cognito centraliza a identidade e reduz riscos comuns de implementações caseiras (armazenamento de senhas, rotação de chaves, validação criptográfica). Os tokens são assinados com chaves gerenciadas (RS256), verificados via JWKS e suportam políticas de segurança, MFA e grupos de usuários. Isso eleva a postura de segurança e simplifica conformidade, enquanto a API permanece “stateless” aceitando apenas tokens válidos emitidos pelo provedor.
